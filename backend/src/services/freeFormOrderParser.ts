@@ -38,25 +38,25 @@ const FILLER_PREFIX_REGEX =
   /^\s*(?:i want|please send|send|need|quero|preciso de|preciso|me veja|me envie)\s+/i;
 
 const CUSTOMER_PATTERNS = [
-  /\b(?:cliente|customer|nome)\s*[:=-]\s*([a-zà-ÿ][\p{L}\s'-]+)/iu,
-  /\bmy name is\s+([a-zà-ÿ][\p{L}\s'-]+)/iu,
-  /\bmeu nome é\s+([a-zà-ÿ][\p{L}\s'-]+)/iu,
+  /\b(?:cliente|customer|nome)\s*[:=-]\s*([^\n\r,;]+)/iu,
+  /\bmy name is\s+([^\n\r,;]+)/iu,
+  /\bmeu nome é\s+([^\n\r,;]+)/iu,
 ];
 
 const DATE_PATTERNS: DatePattern[] = [
-  { regex: /\bday after tomorrow\b/i, offsetDays: 2 },
-  { regex: /\bafter tomorrow\b/i, offsetDays: 2 },
-  { regex: /\bdepois de amanh[aã]\b/i, offsetDays: 2 },
-  { regex: /\btomorrow\b/i, offsetDays: 1 },
-  { regex: /\bamanh[aã]\b/i, offsetDays: 1 },
-  { regex: /\btoday\b/i, offsetDays: 0 },
-  { regex: /\bhoje\b/i, offsetDays: 0 },
-  { regex: /\b(\d{4}-\d{2}-\d{2})\b/ },
+  { regex: /day after tomorrow/i, offsetDays: 2 },
+  { regex: /after tomorrow/i, offsetDays: 2 },
+  { regex: /depois de amanh[aã]/iu, offsetDays: 2 },
+  { regex: /tomorrow/i, offsetDays: 1 },
+  { regex: /amanh[aã]/iu, offsetDays: 1 },
+  { regex: /today/i, offsetDays: 0 },
+  { regex: /hoje/iu, offsetDays: 0 },
+  { regex: /(\d{4}-\d{2}-\d{2})/ },
 ];
 
 const DATE_CLEANUP_PATTERNS = [
   /\b(?:for delivery|delivery|deliver(?:y)?(?: on)?|para entrega|entrega(?: para)?)\b.*$/i,
-  /\b(?:day after tomorrow|after tomorrow|tomorrow|today|depois de amanh[aã]|amanh[aã]|hoje)\b.*$/i,
+  /(?:day after tomorrow|after tomorrow|tomorrow|today|depois de amanh[aã]|amanh[aã]|hoje).*$/iu,
 ];
 
 const ITEM_JOINER_REGEX = /\b(?:and|e)\b\s*$/i;
@@ -192,11 +192,12 @@ export function parseItems(text: string): ParsedOrderItem[] {
 }
 
 export function parseOrder(text: string, baseDate: Date = new Date()): ParsedOrder {
-  const normalizedText = normalizeWhitespace(text);
+  const rawText = text.trim();
+  const normalizedText = normalizeWhitespace(rawText);
 
   return {
-    cliente: parseCustomer(normalizedText),
+    cliente: parseCustomer(rawText),
     itens: parseItems(normalizedText),
-    data_entrega: parseDate(normalizedText, baseDate),
+    data_entrega: parseDate(rawText, baseDate),
   };
 }

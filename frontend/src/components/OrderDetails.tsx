@@ -1,29 +1,9 @@
-import type { Order, PaymentMethod } from '../types/order';
+import type { Order } from '../types/order';
 
 type OrderDetailsProps = {
   order: Order | null;
   isLoading: boolean;
 };
-
-const paymentLabels: Record<Exclude<PaymentMethod, null>, string> = {
-  pix: 'Pix',
-  cash: 'Dinheiro',
-  credit_card: 'Cartão de crédito',
-  debit_card: 'Cartão de débito',
-  bank_transfer: 'Transferência',
-  other: 'Outro',
-};
-
-function formatMoney(value: number | null): string {
-  if (value === null) {
-    return 'Não informado';
-  }
-
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-}
 
 export function OrderDetails({ order, isLoading }: OrderDetailsProps) {
   if (isLoading) {
@@ -55,25 +35,21 @@ export function OrderDetails({ order, isLoading }: OrderDetailsProps) {
       <dl className="inspector-meta">
         <div>
           <dt>Cliente</dt>
-          <dd>{order.structuredData.customerName ?? 'Não informado'}</dd>
+          <dd>{order.cliente ?? 'Não informado'}</dd>
         </div>
         <div>
-          <dt>Pagamento</dt>
-          <dd>
-            {order.structuredData.paymentMethod
-              ? paymentLabels[order.structuredData.paymentMethod]
-              : 'Não informado'}
-          </dd>
+          <dt>Entrega</dt>
+          <dd>{order.dataEntrega ?? 'Não informada'}</dd>
         </div>
         <div>
-          <dt>Total</dt>
-          <dd>{formatMoney(order.structuredData.totalAmount)}</dd>
+          <dt>Itens</dt>
+          <dd>{order.itens.length}</dd>
         </div>
       </dl>
 
       <div className="original-text">
         <span className="detail-label">Texto original</span>
-        <pre>{order.originalText}</pre>
+        <pre>{order.textoOriginal}</pre>
       </div>
     </aside>
   );

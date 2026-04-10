@@ -4,12 +4,11 @@ Full-stack technical assignment with:
 
 - `backend/`: Node.js + Express + SQLite
 - `frontend/`: React + Vite
-- AI-based extraction of structured order data from free-form text
+- rule-based parsing of structured order data from free-form text
 
 ## Requirements
 
 - Node.js 24+ recommended
-- An OpenAI API key for the real AI path
 
 ## Run the backend
 
@@ -24,9 +23,9 @@ The backend starts on `http://localhost:3001`.
 
 Environment variables:
 
-- `OPENAI_API_KEY`: required for real AI extraction
-- `OPENAI_MODEL`: defaults to `gpt-5-mini`
-- `USE_FAKE_AI=true`: optional local fallback parser for demos without an API key
+- `PORT`: defaults to `3001`
+- `FRONTEND_URL`: defaults to `http://localhost:5173`
+- `DATABASE_PATH`: defaults to `./data/orders.db`
 
 ## Run the frontend
 
@@ -50,17 +49,18 @@ Example payload for `POST /pedido`:
 
 ```json
 {
-  "texto": "Cliente: Maria\n2x Pizza Margherita R$ 35,00\nEndereço: Rua das Flores, 123\nPagamento: pix"
+  "texto": "Cliente: Maria Oliveira\nQuero 10 caixas de leite e 5 pacotes de água para entrega amanhã"
 }
 ```
 
 ## Architecture
 
 - `routes -> controller -> service -> repository -> SQLite`
-- `aiExtractionService` centralizes the LLM integration
-- Both `original_text` and `structured_data` are stored for traceability and manual validation
+- `orderService` centralizes parser integration and validation
+- `OrderRepository` persists `orders` and `order_items` in SQLite
+- The original text is stored together with the parsed structure for traceability
 
 ## Notes
 
-- The fallback parser exists only to keep the project runnable without an API key.
-- The intended production/demo path is the OpenAI integration with structured JSON output.
+- The parser output is intentionally simple: customer, delivery date, and identified items.
+- The backend returns a consistent `{ "data": ... }` envelope on success and `{ "error": ... }` on failures.

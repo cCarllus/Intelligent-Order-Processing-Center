@@ -7,14 +7,12 @@ import { runMigrations } from './db/migrations';
 import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { OrderRepository } from './repositories/orderRepository';
 import { createOrderRoutes } from './routes/orderRoutes';
-import { AIExtractionService } from './services/aiExtractionService';
 import { OrderService } from './services/orderService';
 
 runMigrations();
 
 const orderRepository = new OrderRepository();
-const aiExtractionService = new AIExtractionService();
-const orderService = new OrderService(orderRepository, aiExtractionService);
+const orderService = new OrderService(orderRepository);
 const orderController = new OrderController(orderService);
 
 export const app = express();

@@ -30,7 +30,7 @@ export function OrdersList({
         <input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Cliente, item ou endereço"
+          placeholder="Cliente ou item"
         />
       </label>
 
@@ -50,11 +50,11 @@ export function OrdersList({
               >
                 <span className="order-list-main">
                   <strong>#{order.id}</strong>
-                  <span>{order.structuredData.customerName ?? 'Cliente não identificado'}</span>
+                  <span>{order.cliente ?? 'Cliente não identificado'}</span>
                 </span>
                 <span className="order-list-meta">
-                  <span>{order.structuredData.items.length} item(ns)</span>
-                  <span>{new Date(order.createdAt).toLocaleDateString('pt-BR')}</span>
+                  <span>{order.itens.length} item(ns)</span>
+                  <span>{new Date(order.criadoEm).toLocaleDateString('pt-BR')}</span>
                 </span>
               </button>
             );

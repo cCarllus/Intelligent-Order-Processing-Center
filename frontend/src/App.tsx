@@ -95,11 +95,7 @@ function App() {
     }
 
     return orders.filter((order) => {
-      const haystack = [
-        order.structuredData.customerName,
-        order.structuredData.deliveryAddress,
-        ...order.structuredData.items.map((item) => item.name),
-      ]
+      const haystack = [order.cliente, ...order.itens.map((item) => item.produto)]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -137,7 +133,7 @@ function App() {
           <h1>Central simples para processar, armazenar e revisar pedidos livres</h1>
         </div>
         <p className="header-note">
-          React + Vite no frontend, Express + SQLite no backend e extração estruturada via AI.
+          React + Vite no frontend, Express + SQLite no backend e estruturação via parser local.
         </p>
       </header>
 

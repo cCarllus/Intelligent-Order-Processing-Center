@@ -6,7 +6,11 @@ type ErrorWithStatus = Error & {
 };
 
 export function notFoundHandler(_request: Request, response: Response): void {
-  response.status(404).json({ message: 'Rota não encontrada.' });
+  response.status(404).json({
+    error: {
+      message: 'Rota não encontrada.',
+    },
+  });
 }
 
 export function errorHandler(
@@ -17,11 +21,13 @@ export function errorHandler(
 ): void {
   if (error instanceof ZodError) {
     response.status(400).json({
-      message: 'Dados inválidos.',
-      issues: error.issues.map((issue) => ({
-        path: issue.path.join('.'),
-        message: issue.message,
-      })),
+      error: {
+        message: 'Dados inválidos.',
+        details: error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      },
     });
     return;
   }
@@ -29,6 +35,8 @@ export function errorHandler(
   console.error(error);
 
   response.status(error.status ?? 500).json({
-    message: error.message || 'Erro interno do servidor.',
+    error: {
+      message: error.message || 'Erro interno do servidor.',
+    },
   });
 }

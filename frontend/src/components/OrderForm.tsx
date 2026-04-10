@@ -7,12 +7,7 @@ type OrderFormProps = {
 };
 
 const SAMPLE_TEXT = `Cliente: Maria Oliveira
-Pedido:
-2x Pizza Margherita R$ 35,00
-1 Refrigerante R$ 8,00
-Endereço: Rua das Flores, 123 - Centro
-Pagamento: pix
-Obs: sem cebola
+Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 `;
 
 export function OrderForm({ value, isSubmitting, error, onChange, onSubmit }: OrderFormProps) {
@@ -24,8 +19,8 @@ export function OrderForm({ value, isSubmitting, error, onChange, onSubmit }: Or
       </div>
 
       <p className="muted">
-        O fluxo foi pensado para revisão manual: o backend armazena o texto original junto com o
-        JSON estruturado.
+        O backend usa o parser local para transformar texto livre em cliente, data de entrega e
+        itens estruturados.
       </p>
 
       <textarea
