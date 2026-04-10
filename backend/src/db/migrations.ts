@@ -148,6 +148,9 @@ export function runMigrations(): void {
       unit TEXT,
       FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
     );
+
+    CREATE INDEX IF NOT EXISTS idx_order_items_order_id
+    ON order_items(order_id);
   `);
 
   addColumnIfMissing('orders', 'customer_name', 'TEXT');
