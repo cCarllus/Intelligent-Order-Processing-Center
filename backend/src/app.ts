@@ -9,26 +9,39 @@ import { OrderRepository } from './repositories/orderRepository';
 import { createOrderRoutes } from './routes/orderRoutes';
 import { OrderService } from './services/orderService';
 
-runMigrations();
+type CreateAppOptions = {
+  frontendUrl?: string;
+  orderController?: OrderController;
+};
 
-const orderRepository = new OrderRepository();
-const orderService = new OrderService(orderRepository);
-const orderController = new OrderController(orderService);
+function buildOrderController(): OrderController {
+  runMigrations();
+  const orderRepository = new OrderRepository();
+  const orderService = new OrderService(orderRepository);
+  return new OrderController(orderService);
+}
 
-export const app = express();
+export function createApp({
+  frontendUrl = env.frontendUrl,
+  orderController = buildOrderController(),
+}: CreateAppOptions = {}) {
+  const app = express();
 
-app.use(
-  cors({
-    origin: env.frontendUrl,
-  }),
-);
-app.use(express.json());
+  app.use(
+    cors({
+      origin: frontendUrl,
+    }),
+  );
+  app.use(express.json());
 
-app.get('/health', (_request, response) => {
-  response.json({ status: 'ok' });
-});
+  app.get('/health', (_request, response) => {
+    response.json({ status: 'ok' });
+  });
 
-app.use(createOrderRoutes(orderController));
+  app.use(createOrderRoutes(orderController));
 
-app.use(notFoundHandler);
-app.use(errorHandler);
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+
+  return app;
+}

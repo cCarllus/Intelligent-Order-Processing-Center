@@ -1,3 +1,5 @@
+import Database from 'better-sqlite3';
+
 import { db } from './connection';
 
 type ColumnInfo = {
@@ -9,8 +11,8 @@ type LegacyOrderRow = {
   structured_data: string | null;
 };
 
-function hasTable(tableName: string): boolean {
-  const row = db
+function hasTable(database: Database.Database, tableName: string): boolean {
+  const row = database
     .prepare(
       `
         SELECT name
@@ -23,20 +25,27 @@ function hasTable(tableName: string): boolean {
   return Boolean(row);
 }
 
-function getColumns(tableName: string): string[] {
-  if (!hasTable(tableName)) {
+function getColumns(database: Database.Database, tableName: string): string[] {
+  if (!hasTable(database, tableName)) {
     return [];
   }
 
-  return (db.prepare(`PRAGMA table_info(${tableName})`).all() as ColumnInfo[]).map((column) => column.name);
+  return (database.prepare(`PRAGMA table_info(${tableName})`).all() as ColumnInfo[]).map(
+    (column) => column.name,
+  );
 }
 
-function addColumnIfMissing(tableName: string, columnName: string, definition: string): void {
-  if (getColumns(tableName).includes(columnName)) {
+function addColumnIfMissing(
+  database: Database.Database,
+  tableName: string,
+  columnName: string,
+  definition: string,
+): void {
+  if (getColumns(database, tableName).includes(columnName)) {
     return;
   }
 
-  db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition};`);
+  database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition};`);
 }
 
 function toNullableString(value: unknown): string | null {
@@ -47,13 +56,13 @@ function toPositiveInteger(value: unknown): number | null {
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
 }
 
-function runLegacyBackfill(): void {
-  const orderColumns = getColumns('orders');
+function runLegacyBackfill(database: Database.Database): void {
+  const orderColumns = getColumns(database, 'orders');
   if (!orderColumns.includes('structured_data')) {
     return;
   }
 
-  const legacyRows = db.prepare(`
+  const legacyRows = database.prepare(`
     SELECT id, structured_data
     FROM orders
     WHERE structured_data IS NOT NULL
@@ -64,19 +73,19 @@ function runLegacyBackfill(): void {
       )
   `);
 
-  const updateOrderStatement = db.prepare(`
+  const updateOrderStatement = database.prepare(`
     UPDATE orders
     SET customer_name = COALESCE(customer_name, @cliente),
         delivery_date = COALESCE(delivery_date, @dataEntrega)
     WHERE id = @id
   `);
 
-  const insertItemStatement = db.prepare(`
+  const insertItemStatement = database.prepare(`
     INSERT INTO order_items (order_id, product_name, quantity, unit)
     VALUES (@orderId, @produto, @quantidade, @unidade)
   `);
 
-  const backfill = db.transaction((rows: LegacyOrderRow[]) => {
+  const backfill = database.transaction((rows: LegacyOrderRow[]) => {
     for (const row of rows) {
       if (!row.structured_data) {
         continue;
@@ -130,8 +139,8 @@ function runLegacyBackfill(): void {
   backfill(legacyRows.all() as LegacyOrderRow[]);
 }
 
-export function runMigrations(): void {
-  db.exec(`
+export function runMigrations(database: Database.Database = db): void {
+  database.exec(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       original_text TEXT NOT NULL,
@@ -153,7 +162,7 @@ export function runMigrations(): void {
     ON order_items(order_id);
   `);
 
-  addColumnIfMissing('orders', 'customer_name', 'TEXT');
-  addColumnIfMissing('orders', 'delivery_date', 'TEXT');
-  runLegacyBackfill();
+  addColumnIfMissing(database, 'orders', 'customer_name', 'TEXT');
+  addColumnIfMissing(database, 'orders', 'delivery_date', 'TEXT');
+  runLegacyBackfill(database);
 }

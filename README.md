@@ -49,6 +49,7 @@ Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 - ESLint para lint do frontend
 - TypeScript para tipagem estática
 - tsx para fluxo de desenvolvimento do backend
+- Vitest para testes automatizados
 
 ## Como Executar o Projeto
 
@@ -77,6 +78,8 @@ Scripts disponíveis no backend:
 npm run dev
 npm run build
 npm run start
+npm run test
+npm run test:watch
 ```
 
 ### Frontend
@@ -99,6 +102,62 @@ npm run dev
 npm run build
 npm run lint
 npm run preview
+npm run test
+npm run test:watch
+```
+
+## Testes Automatizados
+
+Foi adicionada uma camada de testes pequena, mas suficiente para fortalecer a entrega sem overengineering.
+
+### Backend
+
+- runner: `Vitest`
+- testes de API: `Supertest`
+- estratégia de banco: SQLite em memória para evitar acoplamento com o banco local de desenvolvimento
+
+Cobertura atual:
+
+- parser rule-based
+  - múltiplos itens
+  - unidades opcionais
+  - datas relativas
+  - entradas fracas/inválidas
+  - extração de cliente
+- endpoints
+  - `POST /pedido` sucesso
+  - `POST /pedido` payload inválido
+  - `GET /pedidos`
+  - `GET /pedido/:id`
+  - `GET /pedido/:id` não encontrado
+
+Executar:
+
+```bash
+cd /Users/carllosintfpc/Documents/teste/backend
+npm test
+```
+
+### Frontend
+
+- runner: `Vitest`
+- renderização e interação: `@testing-library/react`
+- interação do usuário: `@testing-library/user-event`
+- ambiente DOM: `jsdom`
+
+Cobertura atual:
+
+- renderização do formulário principal
+- envio de pedido em texto livre
+- exibição do resultado estruturado
+- listagem de pedidos carregados
+- estados de loading e erro
+
+Executar:
+
+```bash
+cd /Users/carllosintfpc/Documents/teste/frontend
+npm test
 ```
 
 ### Variáveis de Ambiente

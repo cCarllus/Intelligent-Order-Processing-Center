@@ -1,3 +1,5 @@
+import Database from 'better-sqlite3';
+
 import { db } from '../db/connection';
 import { storedOrderSchema, type ParsedOrderData, type StoredOrder } from '../schemas/orderSchema';
 
@@ -23,11 +25,6 @@ type NewOrder = ParsedOrderData & {
   textoOriginal: string;
 };
 
-const orderColumns = (db.prepare('PRAGMA table_info(orders)').all() as ColumnInfo[]).map(
-  (column) => column.name,
-);
-const hasLegacyStructuredDataColumn = orderColumns.includes('structured_data');
-
 function mapRow(row: OrderRow, itemRows: OrderItemRow[]): StoredOrder {
   return storedOrderSchema.parse({
     id: row.id,
@@ -44,60 +41,74 @@ function mapRow(row: OrderRow, itemRows: OrderItemRow[]): StoredOrder {
 }
 
 export class OrderRepository {
-  private readonly insertStatement = hasLegacyStructuredDataColumn
-    ? db.prepare(`
-        INSERT INTO orders (original_text, customer_name, delivery_date, structured_data)
-        VALUES (@textoOriginal, @cliente, @dataEntrega, @structuredData)
-      `)
-    : db.prepare(`
-        INSERT INTO orders (original_text, customer_name, delivery_date)
-        VALUES (@textoOriginal, @cliente, @dataEntrega)
-      `);
+  private readonly insertStatement: Database.Statement<any[]>;
+  private readonly insertItemStatement: Database.Statement<any[]>;
+  private readonly selectAllStatement: Database.Statement<any[]>;
+  private readonly selectByIdStatement: Database.Statement<any[]>;
+  private readonly selectItemsByOrderIdStatement: Database.Statement<any[]>;
+  private readonly createTransaction: (order: NewOrder) => number;
 
-  private readonly insertItemStatement = db.prepare(`
-    INSERT INTO order_items (order_id, product_name, quantity, unit)
-    VALUES (@orderId, @produto, @quantidade, @unidade)
-  `);
+  constructor(private readonly database: Database.Database = db) {
+    const orderColumns = (this.database.prepare('PRAGMA table_info(orders)').all() as ColumnInfo[]).map(
+      (column) => column.name,
+    );
+    const hasLegacyStructuredDataColumn = orderColumns.includes('structured_data');
 
-  private readonly selectAllStatement = db.prepare(`
-    SELECT id, original_text, customer_name, delivery_date, created_at
-    FROM orders
-    ORDER BY datetime(created_at) DESC, id DESC
-  `);
+    this.insertStatement = hasLegacyStructuredDataColumn
+      ? this.database.prepare(`
+          INSERT INTO orders (original_text, customer_name, delivery_date, structured_data)
+          VALUES (@textoOriginal, @cliente, @dataEntrega, @structuredData)
+        `)
+      : this.database.prepare(`
+          INSERT INTO orders (original_text, customer_name, delivery_date)
+          VALUES (@textoOriginal, @cliente, @dataEntrega)
+        `);
 
-  private readonly selectByIdStatement = db.prepare(`
-    SELECT id, original_text, customer_name, delivery_date, created_at
-    FROM orders
-    WHERE id = ?
-  `);
+    this.insertItemStatement = this.database.prepare(`
+      INSERT INTO order_items (order_id, product_name, quantity, unit)
+      VALUES (@orderId, @produto, @quantidade, @unidade)
+    `);
 
-  private readonly selectItemsByOrderIdStatement = db.prepare(`
-    SELECT product_name, quantity, unit
-    FROM order_items
-    WHERE order_id = ?
-    ORDER BY id ASC
-  `);
+    this.selectAllStatement = this.database.prepare(`
+      SELECT id, original_text, customer_name, delivery_date, created_at
+      FROM orders
+      ORDER BY datetime(created_at) DESC, id DESC
+    `);
 
-  private readonly createTransaction = db.transaction((order: NewOrder): number => {
-    const result = this.insertStatement.run({
-      ...order,
-      structuredData: JSON.stringify({
-        cliente: order.cliente,
-        data_entrega: order.dataEntrega,
-        itens: order.itens,
-      }),
-    });
-    const orderId = Number(result.lastInsertRowid);
+    this.selectByIdStatement = this.database.prepare(`
+      SELECT id, original_text, customer_name, delivery_date, created_at
+      FROM orders
+      WHERE id = ?
+    `);
 
-    for (const item of order.itens) {
-      this.insertItemStatement.run({
-        orderId,
-        ...item,
+    this.selectItemsByOrderIdStatement = this.database.prepare(`
+      SELECT product_name, quantity, unit
+      FROM order_items
+      WHERE order_id = ?
+      ORDER BY id ASC
+    `);
+
+    this.createTransaction = this.database.transaction((order: NewOrder): number => {
+      const result = this.insertStatement.run({
+        ...order,
+        structuredData: JSON.stringify({
+          cliente: order.cliente,
+          data_entrega: order.dataEntrega,
+          itens: order.itens,
+        }),
       });
-    }
+      const orderId = Number(result.lastInsertRowid);
 
-    return orderId;
-  });
+      for (const item of order.itens) {
+        this.insertItemStatement.run({
+          orderId,
+          ...item,
+        });
+      }
+
+      return orderId;
+    });
+  }
 
   private loadItems(orderId: number): OrderItemRow[] {
     return this.selectItemsByOrderIdStatement.all(orderId) as OrderItemRow[];
