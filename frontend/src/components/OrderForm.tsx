@@ -11,6 +11,8 @@ Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 `;
 
 export function OrderForm({ value, isSubmitting, error, onChange, onSubmit }: OrderFormProps) {
+  const isDisabled = isSubmitting || !value.trim();
+
   return (
     <section className="composer" aria-labelledby="composer-title">
       <div className="section-heading">
@@ -32,7 +34,7 @@ export function OrderForm({ value, isSubmitting, error, onChange, onSubmit }: Or
       />
 
       <div className="composer-actions">
-        <button className="primary-button" type="button" onClick={onSubmit} disabled={isSubmitting}>
+        <button className="primary-button" type="button" onClick={onSubmit} disabled={isDisabled}>
           {isSubmitting ? 'Processando...' : 'Processar pedido'}
         </button>
         <button

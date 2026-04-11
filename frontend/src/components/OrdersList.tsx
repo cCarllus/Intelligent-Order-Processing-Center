@@ -2,17 +2,19 @@ import type { Order } from '../types/order';
 
 type OrdersListProps = {
   orders: Order[];
+  error: string | null;
+  isLoading: boolean;
   selectedOrderId: number | null;
-  search: string;
-  onSearchChange: (value: string) => void;
+  onRetry: () => void;
   onSelect: (orderId: number) => void;
 };
 
 export function OrdersList({
   orders,
+  error,
+  isLoading,
   selectedOrderId,
-  search,
-  onSearchChange,
+  onRetry,
   onSelect,
 }: OrdersListProps) {
   return (
@@ -25,17 +27,17 @@ export function OrdersList({
         <span className="counter-pill">{orders.length}</span>
       </div>
 
-      <label className="search-field">
-        <span>Buscar pedidos</span>
-        <input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Cliente ou item"
-        />
-      </label>
-
       <div className="orders-list">
-        {orders.length === 0 ? (
+        {isLoading ? (
+          <p className="muted">Carregando pedidos...</p>
+        ) : error ? (
+          <div className="list-feedback">
+            <p className="feedback error">{error}</p>
+            <button className="ghost-button" type="button" onClick={onRetry}>
+              Tentar novamente
+            </button>
+          </div>
+        ) : orders.length === 0 ? (
           <p className="muted">Nenhum pedido salvo ainda.</p>
         ) : (
           orders.map((order) => {

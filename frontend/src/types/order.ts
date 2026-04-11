@@ -16,3 +16,17 @@ export type Order = {
 export type ApiResponse<T> = {
   data: T;
 };
+
+export type OrdersListResponse = {
+  data: Order[];
+  meta: {
+    total: number;
+  };
+};
+
+export type ApiErrorResponse = {
+  error?: {
+    message?: string;
+    details?: unknown;
+  };
+};

@@ -1,21 +1,23 @@
-import type { ApiResponse, Order } from '../types/order';
+import type { ApiErrorResponse, ApiResponse, Order, OrdersListResponse } from '../types/order';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
-async function handleResponse<T>(response: Response): Promise<T> {
+async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { error?: { message?: string } }
-      | null;
+    const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
     throw new Error(payload?.error?.message ?? 'Request failed.');
   }
 
-  const payload = (await response.json()) as ApiResponse<T>;
-  return payload.data;
+  return (await response.json()) as ApiResponse<T>;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+  const response = await fetch(`${API_URL}${path}`, init);
+  return parseResponse<T>(response);
 }
 
 export async function createOrder(texto: string): Promise<Order> {
-  const response = await fetch(`${API_URL}/pedido`, {
+  const response = await request<Order>('/pedido', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -23,15 +25,10 @@ export async function createOrder(texto: string): Promise<Order> {
     body: JSON.stringify({ texto }),
   });
 
-  return handleResponse<Order>(response);
+  return response.data;
 }
 
 export async function getOrders(): Promise<Order[]> {
-  const response = await fetch(`${API_URL}/pedidos`);
-  return handleResponse<Order[]>(response);
-}
-
-export async function getOrderById(id: number): Promise<Order> {
-  const response = await fetch(`${API_URL}/pedido/${id}`);
-  return handleResponse<Order>(response);
+  const response = await request<OrdersListResponse>('/pedidos');
+  return response.data.data;
 }

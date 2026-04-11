@@ -1,73 +1,69 @@
-# React + TypeScript + Vite
+# Smart Order Processing Center Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Minimal React + TypeScript + Vite frontend for the assignment.
 
-Currently, two official plugins are available:
+## Goal
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The UI covers the core demo flow:
 
-## React Compiler
+1. Type a free-form order
+2. Send it to `POST /pedido`
+3. Show the structured order returned by the backend
+4. List previously created orders from `GET /pedidos`
+5. Show loading and error states without extra libraries
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Frontend architecture
 
-## Expanding the ESLint configuration
+The app keeps state in a single screen component and pushes rendering into small presentational components.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `src/App.tsx`
+  Coordinates page state and async actions.
+- `src/api/ordersApi.ts`
+  Small API client for backend requests.
+- `src/types/order.ts`
+  Shared frontend types for API responses and orders.
+- `src/components/OrderForm.tsx`
+  Free-form text input and submit action.
+- `src/components/OrderResult.tsx`
+  Latest structured order returned after submission.
+- `src/components/OrdersList.tsx`
+  Previously saved orders with loading/error feedback.
+- `src/components/OrderDetails.tsx`
+  Details for the selected order, including the original text.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## State flow
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- `orderText`
+  Controlled textarea value.
+- `isSubmitting` + `submitError`
+  Handles the submission button and request feedback.
+- `orders` + `isLoadingOrders` + `ordersError`
+  Handles the historical list.
+- `latestOrder`
+  Stores the most recently created order for the result panel.
+- `selectedOrderId`
+  Tracks which order is highlighted in the history panel.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This keeps the explanation straightforward:
+
+- on page load: fetch orders once
+- on submit: call `POST /pedido`
+- on success: show returned order, prepend it locally to the list, select it
+- on click in history: swap the selected order in the details panel
+
+## Local setup
+
+```bash
+cd /Users/carllosintfpc/Documents/teste/frontend
+npm install
+cp .env.example .env
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The frontend runs on `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Environment
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+`VITE_API_URL` defaults to `http://localhost:3001`.
+
+If your backend uses another port, change it in `.env`.
