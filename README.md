@@ -1,8 +1,8 @@
 # Smart Order Processing Center
 
-Desafio técnico full-stack para transformar pedidos em texto livre em dados estruturados, armazená-los em SQLite e disponibilizá-los por meio de uma API simples e de uma interface React.
+Aplicação full-stack que transforma pedidos em texto livre em dados estruturados, armazena essas informações em SQLite e as disponibiliza por meio de uma API simples e de uma interface React.
 
-## Visão Geral
+## Visão Geral do Projeto
 
 O sistema resolve um problema operacional comum: receber pedidos em linguagem natural e convertê-los para um formato consistente, que possa ser validado, persistido e consultado posteriormente.
 
@@ -51,7 +51,7 @@ Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 - tsx para fluxo de desenvolvimento do backend
 - Vitest para testes automatizados
 
-## Como Executar o Projeto
+## Como Executar
 
 ### Pré-requisitos
 
@@ -61,8 +61,10 @@ Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 
 ### Backend
 
+Na raiz do repositório:
+
 ```bash
-cd /Users/carllosintfpc/Documents/teste/backend
+cd backend
 npm install
 cp .env.example .env
 npm run dev
@@ -84,8 +86,10 @@ npm run test:watch
 
 ### Frontend
 
+Na raiz do repositório:
+
 ```bash
-cd /Users/carllosintfpc/Documents/teste/frontend
+cd frontend
 npm install
 cp .env.example .env
 npm run dev
@@ -108,7 +112,7 @@ npm run test:watch
 
 ## Testes Automatizados
 
-Foi adicionada uma camada de testes pequena, mas suficiente para fortalecer a entrega sem overengineering.
+Foi incluída uma camada pequena, mas suficiente, de testes automatizados para melhorar a confiabilidade sem adicionar complexidade desnecessária.
 
 ### Backend
 
@@ -118,23 +122,13 @@ Foi adicionada uma camada de testes pequena, mas suficiente para fortalecer a en
 
 Cobertura atual:
 
-- parser rule-based
-  - múltiplos itens
-  - unidades opcionais
-  - datas relativas
-  - entradas fracas/inválidas
-  - extração de cliente
-- endpoints
-  - `POST /pedido` sucesso
-  - `POST /pedido` payload inválido
-  - `GET /pedidos`
-  - `GET /pedido/:id`
-  - `GET /pedido/:id` não encontrado
+- cobertura do parser: múltiplos itens, unidades opcionais, datas relativas, entradas fracas ou inválidas e extração de cliente
+- cobertura dos endpoints: `POST /pedido` com sucesso, `POST /pedido` com payload inválido, `GET /pedidos`, `GET /pedido/:id` e `GET /pedido/:id` não encontrado
 
 Executar:
 
 ```bash
-cd /Users/carllosintfpc/Documents/teste/backend
+cd backend
 npm test
 ```
 
@@ -156,7 +150,7 @@ Cobertura atual:
 Executar:
 
 ```bash
-cd /Users/carllosintfpc/Documents/teste/frontend
+cd frontend
 npm test
 ```
 
@@ -176,7 +170,7 @@ npm test
 
 Observação:
 
-- As variáveis relacionadas à OpenAI existem na configuração, mas a solução atual usa um parser rule-based e não depende delas no fluxo principal.
+- As variáveis relacionadas à OpenAI estão disponíveis na configuração, mas a solução atual usa um parser rule-based e não depende delas no fluxo principal.
 
 `.env` do frontend:
 
@@ -188,7 +182,7 @@ Observação:
 Terminal 1:
 
 ```bash
-cd /Users/carllosintfpc/Documents/teste/backend
+cd backend
 npm install
 cp .env.example .env
 npm run dev
@@ -197,20 +191,19 @@ npm run dev
 Terminal 2:
 
 ```bash
-cd /Users/carllosintfpc/Documents/teste/frontend
+cd frontend
 npm install
 cp .env.example .env
 npm run dev
 ```
 
-Depois, abra [http://localhost:5173](http://localhost:5173).
+Depois, abra `http://localhost:5173`.
 
-### Execução com Docker
+### Uso com Docker
 
-Para reviewers, a forma mais simples de subir tudo é:
+Para avaliação local, a forma mais simples de subir a stack completa é:
 
 ```bash
-cd /Users/carllosintfpc/Documents/teste
 docker compose up --build
 ```
 
@@ -226,13 +219,13 @@ docker compose up --build -d
 docker compose down
 ```
 
-Observações do setup Docker:
+Observações sobre o setup com Docker:
 
-- o frontend roda com o servidor do Vite, exposto em `0.0.0.0`, para facilitar a avaliação
+- o frontend roda com o servidor do Vite, exposto em `0.0.0.0`, para acesso local
 - o backend roda a API Express compilada em TypeScript
-- o SQLite persiste em `backend/data`, montado no container para não perder dados entre reinicializações
-- o frontend usa `VITE_API_URL=http://localhost:3001`, porque as chamadas saem do navegador do reviewer, não de dentro do container
-- o backend mantém `FRONTEND_URL=http://localhost:5173` para o CORS funcionar corretamente
+- o SQLite persiste em `backend/data`, montado no container para manter os dados entre reinicializações
+- o frontend usa `VITE_API_URL=http://localhost:3001`, porque as chamadas saem do navegador, não de dentro do container
+- o backend mantém `FRONTEND_URL=http://localhost:5173` para que o CORS funcione corretamente
 
 ## Resumo da API
 
@@ -244,13 +237,13 @@ Formatos de sucesso:
 
 - `POST /pedido` -> `{ data: Order }`
 - `GET /pedido/:id` -> `{ data: Order }`
-- `GET /pedidos` -> `{ data: Order[], meta: { total } }`
+- `GET /pedidos` -> `{ data: Order[], meta: { total: number } }`
 
 Formato de erro:
 
 - `{ error: { message, details? } }`
 
-## Resumo da Arquitetura
+## Arquitetura
 
 ### Backend
 
@@ -259,7 +252,7 @@ O backend segue uma estrutura simples em camadas:
 - `routes`
   Define os endpoints HTTP.
 - `controller`
-  Faz o fluxo de request/response.
+  Controla o fluxo de request/response.
 - `service`
   Coordena parsing, validação e regras de negócio.
 - `repository`
@@ -280,35 +273,31 @@ O frontend foi mantido intencionalmente como uma interface de página única:
 1. O usuário envia um texto livre pelo frontend.
 2. O frontend faz `POST /pedido`.
 3. O backend valida a requisição e executa o parser.
-4. Os dados parseados são normalizados e validados.
+4. Os dados extraídos são normalizados e validados.
 5. O repositório persiste o pedido e os itens em SQLite.
 6. O pedido criado é retornado ao frontend.
 7. O frontend atualiza o resultado mais recente e o histórico.
 
-Para a descrição completa de pastas e arquivos, consulte [PROJECT_STRUCTURE.md](/Users/carllosintfpc/Documents/teste/PROJECT_STRUCTURE.md).
+## Notas do Repositório
 
-## Notas Para Revisão
-
-Pontos que vale documentar e explicar rapidamente em entrevista:
-
-- há um `docker-compose.yml` na raiz para subir frontend e backend com um único comando
-- o `README.md` da raiz é a fonte principal de instruções; o `frontend/README.md` foi removido para evitar duplicação
-- arquivos locais e temporários, como `.DS_Store`, `node_modules`, `dist`, `.env` e artefatos de WAL/SHM do SQLite, ficam ignorados no repositório
-- o arquivo principal do banco (`backend/data/orders.db`) também fica fora do versionamento; apenas a pasta `data/` permanece disponível para persistência local
+- o `docker-compose.yml` na raiz sobe frontend e backend com um único comando
+- o `README.md` da raiz é a fonte principal das instruções de setup; o `frontend/README.md` foi removido para evitar duplicação
+- arquivos locais e temporários, como `.DS_Store`, `node_modules`, `dist`, `.env` e artefatos WAL/SHM do SQLite, estão ignorados no repositório
+- o arquivo principal do banco, `backend/data/orders.db`, fica fora do versionamento; a pasta `data/` permanece disponível para persistência local
 
 ## Uso de IA
 
-Esta seção deve permanecer factual. Substitua os placeholders entre colchetes pelas ferramentas que você realmente utilizou antes de entregar o projeto.
+Ferramentas de IA foram utilizadas como apoio de produtividade e exploração técnica. A implementação final foi revisada e refinada manualmente.
 
 ### Ferramentas Utilizadas
 
-- `[ex.: ChatGPT]`
-- `[ex.: GitHub Copilot]`
-- `[remover qualquer ferramenta que não tenha sido usada]`
+- `ChatGPT`
+- `Grok`
+- `Codex`
 
-### Onde a IA Foi Utilizada
+### Áreas de Uso
 
-- Desenho de arquitetura
+- Exploração de arquitetura
   Usada para comparar uma estrutura simples em camadas no backend com uma abordagem de frontend de página única.
 - Desenvolvimento do parser
   Usada para explorar padrões de regex, regras de normalização e exemplos de edge cases para pedidos em texto livre.
@@ -317,72 +306,67 @@ Esta seção deve permanecer factual. Substitua os placeholders entre colchetes 
 - Setup do frontend
   Usada para orientar a estrutura de componentes, fluxo de estado local e organização da camada de API.
 
-### Como os Prompts Evoluíram
+### Evolução dos Prompts
 
-- Os prompts iniciais eram mais amplos e focados em arquitetura e organização geral.
-- Depois, ficaram mais específicos sobre:
-  - contrato de respostas da API
-  - edge cases do parser
-  - modelagem de persistência em SQLite
-  - responsabilidades dos componentes React
-  - adequação da solução ao escopo de 6–8 horas
+- Os prompts iniciais foram mais amplos e focados em arquitetura e organização geral.
+- Depois, passaram a focar mais especificamente em contratos de resposta da API, edge cases do parser, modelagem de persistência em SQLite, responsabilidades dos componentes React e adequação ao escopo de 6-8 horas.
 
-### Onde as Sugestões da IA Foram Incorretas ou Incompletas
+### Limitações Observadas nas Sugestões de IA
 
-Casos típicos encontrados durante a iteração:
+Casos típicos identificados durante a iteração:
 
-- boilerplate que não correspondia exatamente ao contrato exigido pela API
+- boilerplate que não correspondia completamente ao contrato exigido pela API
 - sugestões de parser genéricas demais para o formato esperado de entrada
 - sugestões de frontend com complexidade desnecessária
 - inconsistências de nomenclatura ou formato de resposta entre camadas
 
-### O que Foi Revisado e Corrigido Manualmente
+### Revisão e Refinamento Manual
 
 O código final foi revisado e ajustado manualmente. Isso incluiu:
 
 - alinhar a implementação ao contrato esperado da API
-- simplificar o frontend para uso de estado local
-- refinar regras do parser para os padrões de pedido esperados
+- simplificar o frontend com base em estado local
+- refinar as regras do parser para os padrões de pedido esperados
 - padronizar nomenclaturas entre backend, frontend e persistência
-- revisar tratamento de erros e consistência de respostas
+- revisar o tratamento de erros e a consistência das respostas
 
-Observação final:
+## Abordagem de Desenvolvimento
 
-- A IA foi utilizada como ferramenta de apoio para acelerar iteração e exploração, mas a versão final submetida foi validada e refinada manualmente.
+A implementação seguiu uma abordagem leve orientada por contrato. Os formatos esperados de entrada, os contratos de resposta da API e os fluxos principais do sistema serviram como referência para organizar backend, frontend, validações e testes sem introduzir overhead processual desnecessário.
 
 ## Decisões Técnicas
 
 ### Por que SQLite
 
-- Rápido de configurar para um desafio técnico
-- Não exige serviço externo
-- É adequado para um conjunto pequeno de dados relacionais
-- Facilita a avaliação, porque o projeto roda localmente sem infraestrutura adicional
+- rápido de configurar para uma avaliação técnica
+- não exige serviço externo
+- adequado para um conjunto pequeno de dados relacionais
+- facilita a execução local sem infraestrutura adicional
 
-### Por que um Parser Rule-based em vez de NLP
+### Por que um Parser Rule-Based em vez de NLP
 
-- As entradas esperadas são limitadas o suficiente para uma abordagem determinística
-- Uma solução rule-based é mais fácil de explicar, depurar e validar
-- Evita dependência de APIs externas ou saída probabilística
-- Mantém o comportamento estável e reproduzível na demonstração
+- as entradas esperadas são limitadas o suficiente para uma abordagem determinística
+- uma solução rule-based é mais fácil de depurar, validar e compreender
+- evita dependência de APIs externas e saídas probabilísticas
+- mantém o comportamento estável e reproduzível
 
 Trade-off:
 
-- É menos flexível que uma solução baseada em NLP e exige tratamento explícito de novos padrões.
+- é menos flexível do que uma solução baseada em NLP e exige tratamento explícito para novos padrões
 
 ### Por que um Frontend Simples, de Página Única, com Estado Local
 
-- O desafio possui um fluxo principal bem definido
-- Gerenciamento global de estado adicionaria complexidade sem ganho claro
-- Estado local mantém o código mais legível e fácil de explicar
-- É suficiente para os fluxos de criar, listar e visualizar
+- o projeto tem um fluxo principal bem definido
+- gerenciamento global de estado adicionaria complexidade sem ganho claro
+- estado local mantém o código mais legível e fácil de manter
+- é suficiente para os fluxos de criar, listar e visualizar
 
-### Trade-offs pelo Escopo de 6–8 Horas
+### Trade-Offs Dentro de um Escopo de 6-8 Horas
 
-- priorização de corretude end-to-end em vez de polimento visual avançado
-- escolha de um parser determinístico em vez de uma solução mais ambiciosa
-- ausência de roteamento e bibliotecas externas de estado
-- foco em legibilidade, previsibilidade e facilidade de avaliação
+- priorizar corretude end-to-end em vez de polimento visual avançado
+- escolher um parser determinístico em vez de uma solução mais ambiciosa
+- evitar roteamento e bibliotecas externas de estado
+- focar em legibilidade, previsibilidade e facilidade de avaliação
 
 ## Edge Cases Tratados
 
@@ -391,13 +375,13 @@ Trade-off:
 - quantidades ausentes
   itens sem quantidade válida são ignorados, e a requisição falha se nenhum item válido for encontrado
 - unidades ausentes
-  a unidade é opcional e é armazenada como `null` quando não detectada
+  a unidade é opcional e armazenada como `null` quando não detectada
 - múltiplos itens em uma única frase
-  o parser suporta vários itens iniciados por quantidade na mesma sentença
+  o parser suporta vários itens baseados em quantidade na mesma sentença
 - datas relativas
   suporta termos como `today`, `tomorrow`, `day after tomorrow`, `hoje`, `amanhã` e `depois de amanhã`
 
-## Checklist Final de Revisão
+## Checklist Final
 
 Antes da entrega, verificar:
 
@@ -405,12 +389,11 @@ Antes da entrega, verificar:
 - consistência de nomenclatura entre backend, frontend e persistência
 - tratamento de erro claro e dentro do formato esperado
 - remoção de logs temporários, código de debug e arquivos não usados
-- `.gitignore` cobrindo `node_modules`, build, `.env`, arquivos do SQLite e também `-wal` / `-shm`
+- `.gitignore` cobrindo `node_modules`, artefatos de build, `.env`, arquivos do SQLite e também `-wal` / `-shm`
 - backend e frontend iniciando corretamente a partir de um clone limpo
 - fluxos de criar, listar e visualizar funcionando de ponta a ponta
 
 ## Observações Finais
 
-- O projeto foi intencionalmente mantido fácil de revisar rapidamente.
-- A implementação prioriza clareza, comportamento determinístico e estrutura legível, sem complexidade desnecessária.
-- A documentação detalhada de pastas e arquivos está em [PROJECT_STRUCTURE.md](/Users/carllosintfpc/Documents/teste/PROJECT_STRUCTURE.md).
+- o projeto foi mantido intencionalmente fácil de revisar rapidamente
+- a implementação prioriza clareza, comportamento determinístico e estrutura legível, sem complexidade desnecessária
