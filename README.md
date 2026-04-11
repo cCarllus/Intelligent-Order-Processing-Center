@@ -56,6 +56,7 @@ Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 
 - Node.js 24+ recomendado
 - npm
+- Docker + Docker Compose (opcional, para execução simplificada)
 
 ### Backend
 
@@ -145,6 +146,35 @@ npm run dev
 
 Depois, abra [http://localhost:5173](http://localhost:5173).
 
+### Execução com Docker
+
+Para reviewers, a forma mais simples de subir tudo é:
+
+```bash
+cd /Users/carllosintfpc/Documents/teste
+docker compose up --build
+```
+
+Serviços expostos:
+
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:3001`
+
+Comandos úteis:
+
+```bash
+docker compose up --build -d
+docker compose down
+```
+
+Observações do setup Docker:
+
+- o frontend roda com o servidor do Vite, exposto em `0.0.0.0`, para facilitar a avaliação
+- o backend roda a API Express compilada em TypeScript
+- o SQLite persiste em `backend/data`, montado no container para não perder dados entre reinicializações
+- o frontend usa `VITE_API_URL=http://localhost:3001`, porque as chamadas saem do navegador do reviewer, não de dentro do container
+- o backend mantém `FRONTEND_URL=http://localhost:5173` para o CORS funcionar corretamente
+
 ## Resumo da API
 
 - `POST /pedido`
@@ -197,6 +227,15 @@ O frontend foi mantido intencionalmente como uma interface de página única:
 7. O frontend atualiza o resultado mais recente e o histórico.
 
 Para a descrição completa de pastas e arquivos, consulte [PROJECT_STRUCTURE.md](/Users/carllosintfpc/Documents/teste/PROJECT_STRUCTURE.md).
+
+## Notas Para Revisão
+
+Pontos que vale documentar e explicar rapidamente em entrevista:
+
+- há um `docker-compose.yml` na raiz para subir frontend e backend com um único comando
+- o `README.md` da raiz é a fonte principal de instruções; o `frontend/README.md` foi removido para evitar duplicação
+- arquivos locais e temporários, como `.DS_Store`, `node_modules`, `dist`, `.env` e artefatos de WAL/SHM do SQLite, ficam ignorados no repositório
+- o arquivo principal do banco (`backend/data/orders.db`) também fica fora do versionamento; apenas a pasta `data/` permanece disponível para persistência local
 
 ## Uso de IA
 
