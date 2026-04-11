@@ -1,43 +1,63 @@
 # Smart Order Processing Center
 
-Full-stack technical assignment for processing free-form purchase orders into structured data, storing them in SQLite, and exposing them through a simple API and React UI.
+Desafio técnico full-stack para transformar pedidos em texto livre em dados estruturados, armazená-los em SQLite e disponibilizá-los por meio de uma API simples e de uma interface React.
 
-## Overview
+## Visão Geral
 
-The system accepts natural-language order text such as:
+O sistema resolve um problema operacional comum: receber pedidos em linguagem natural e convertê-los para um formato consistente, que possa ser validado, persistido e consultado posteriormente.
+
+Ele cobre o fluxo completo, da entrada em texto até o histórico salvo:
+
+- criar um pedido a partir de texto livre
+- extrair cliente, data de entrega e itens
+- persistir pedidos e itens em SQLite
+- listar pedidos já criados
+- visualizar um pedido específico
+- exibir imediatamente no frontend o resultado estruturado
+
+Exemplo de entrada:
 
 ```text
 Cliente: Maria Oliveira
 Quero 10 caixas de leite e 5 pacotes de água para entrega amanhã
 ```
 
-It parses the input into a structured order, persists the result, and allows the user to review previous orders.
+## Stack Tecnológica
 
-### Main features
+### Backend
 
-- Create an order from free-form text
-- Parse customer, delivery date, and multiple items from a single sentence
-- Persist orders and order items in SQLite
-- List all saved orders
-- View a single order by id
-- Display the structured result immediately in the frontend
-- Return consistent success and error response shapes
+- Node.js
+- Express
+- TypeScript
+- Zod
+- better-sqlite3
+- CORS / dotenv
 
-### Technologies used
+### Frontend
 
-- Backend: Node.js, Express, TypeScript, Zod, better-sqlite3
-- Frontend: React, TypeScript, Vite
-- Database: SQLite
-- Parsing: custom rule-based parser using string normalization and regex patterns
+- React
+- Vite
+- TypeScript
 
-## Running the project
+### Banco de Dados
 
-### Prerequisites
+- SQLite
 
-- Node.js 24+ recommended
+### Validação e Ferramentas
+
+- Zod para validação de requisições e domínio
+- ESLint para lint do frontend
+- TypeScript para tipagem estática
+- tsx para fluxo de desenvolvimento do backend
+
+## Como Executar o Projeto
+
+### Pré-requisitos
+
+- Node.js 24+ recomendado
 - npm
 
-### 1. Backend
+### Backend
 
 ```bash
 cd /Users/carllosintfpc/Documents/teste/backend
@@ -46,9 +66,11 @@ cp .env.example .env
 npm run dev
 ```
 
-Backend URL: `http://localhost:3001`
+O backend roda em:
 
-Available scripts:
+- `http://localhost:3001`
+
+Scripts disponíveis no backend:
 
 ```bash
 npm run dev
@@ -56,7 +78,7 @@ npm run build
 npm run start
 ```
 
-### 2. Frontend
+### Frontend
 
 ```bash
 cd /Users/carllosintfpc/Documents/teste/frontend
@@ -65,9 +87,11 @@ cp .env.example .env
 npm run dev
 ```
 
-Frontend URL: `http://localhost:5173`
+O frontend roda em:
 
-Available scripts:
+- `http://localhost:5173`
+
+Scripts disponíveis no frontend:
 
 ```bash
 npm run dev
@@ -76,255 +100,219 @@ npm run lint
 npm run preview
 ```
 
-### Environment variables
+### Variáveis de Ambiente
 
-Backend `.env`:
+`.env` do backend:
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `PORT` | No | `3001` | Backend port |
-| `FRONTEND_URL` | No | `http://localhost:5173` | CORS origin |
-| `DATABASE_PATH` | No | `./data/orders.db` | SQLite file path |
-| `OPENAI_API_KEY` | No | empty | Present in config, not required for the current rule-based parser |
-| `OPENAI_MODEL` | No | `gpt-5-mini` | Present in config, not required for the current rule-based parser |
-| `USE_FAKE_AI` | No | `false` | Present in config, not required for the current rule-based parser |
+- `PORT`
+  Porta do backend. Padrão: `3001`
+- `FRONTEND_URL`
+  Origem permitida no CORS. Padrão: `http://localhost:5173`
+- `DATABASE_PATH`
+  Caminho do banco SQLite. Padrão: `./data/orders.db`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+- `USE_FAKE_AI`
 
-Frontend `.env`:
+Observação:
 
-| Variable | Required | Default | Notes |
-| --- | --- | --- | --- |
-| `VITE_API_URL` | No | `http://localhost:3001` | Backend base URL |
+- As variáveis relacionadas à OpenAI existem na configuração, mas a solução atual usa um parser rule-based e não depende delas no fluxo principal.
 
-### Quick demo flow
+`.env` do frontend:
 
-1. Start the backend
-2. Start the frontend
-3. Open `http://localhost:5173`
-4. Submit a free-form order
-5. Verify that:
-   - the order is parsed and displayed
-   - the order appears in the history list
-   - the order can be viewed again from the stored data
+- `VITE_API_URL`
+  URL base do backend. Padrão: `http://localhost:3001`
 
-## API summary
+### Exemplo Rápido de Execução
+
+Terminal 1:
+
+```bash
+cd /Users/carllosintfpc/Documents/teste/backend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Terminal 2:
+
+```bash
+cd /Users/carllosintfpc/Documents/teste/frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Depois, abra [http://localhost:5173](http://localhost:5173).
+
+## Resumo da API
 
 - `POST /pedido`
 - `GET /pedidos`
 - `GET /pedido/:id`
 
-Success responses:
+Formatos de sucesso:
 
 - `POST /pedido` -> `{ data: Order }`
 - `GET /pedido/:id` -> `{ data: Order }`
 - `GET /pedidos` -> `{ data: Order[], meta: { total } }`
 
-Error responses:
+Formato de erro:
 
 - `{ error: { message, details? } }`
 
-## Architecture
+## Resumo da Arquitetura
 
-### Backend structure
+### Backend
 
-The backend follows a simple layered flow:
+O backend segue uma estrutura simples em camadas:
 
 - `routes`
-  Defines the HTTP endpoints.
+  Define os endpoints HTTP.
 - `controller`
-  Handles request/response concerns and delegates business logic.
+  Faz o fluxo de request/response.
 - `service`
-  Normalizes input, runs parsing, applies validation, and coordinates persistence.
+  Coordena parsing, validação e regras de negócio.
 - `repository`
-  Encapsulates SQLite reads/writes and transaction logic.
+  Encapsula a persistência em SQLite.
 - `parser`
-  Extracts `cliente`, `data_entrega`, and `itens` from free-form text.
+  Extrai campos estruturados a partir do texto livre.
 
-Relevant files:
+### Frontend
 
-- `backend/src/routes/orderRoutes.ts`
-- `backend/src/controllers/orderController.ts`
-- `backend/src/services/orderService.ts`
-- `backend/src/services/freeFormOrderParser.ts`
-- `backend/src/repositories/orderRepository.ts`
-- `backend/src/db/migrations.ts`
+O frontend foi mantido intencionalmente como uma interface de página única:
 
-### Frontend structure
+- `App.tsx` coordena carregamento, envio, seleção e estados de feedback
+- componentes pequenos renderizam formulário, último resultado, lista de pedidos e detalhes
+- uma camada leve de API isola as chamadas ao backend
 
-The frontend is intentionally single-page and keeps state local to the main screen.
+### Fluxo de Dados em Alto Nível
 
-- `frontend/src/App.tsx`
-  Coordinates loading, submission, selection, and error states.
-- `frontend/src/components/OrderForm.tsx`
-  Free-form text input and submit button.
-- `frontend/src/components/OrderResult.tsx`
-  Shows the latest parsed order returned by the API.
-- `frontend/src/components/OrdersList.tsx`
-  Shows previously created orders and loading/error states.
-- `frontend/src/components/OrderDetails.tsx`
-  Shows the selected order, including the original text.
-- `frontend/src/api/ordersApi.ts`
-  Small API layer for backend requests.
-- `frontend/src/types/order.ts`
-  Shared TypeScript types for API data.
+1. O usuário envia um texto livre pelo frontend.
+2. O frontend faz `POST /pedido`.
+3. O backend valida a requisição e executa o parser.
+4. Os dados parseados são normalizados e validados.
+5. O repositório persiste o pedido e os itens em SQLite.
+6. O pedido criado é retornado ao frontend.
+7. O frontend atualiza o resultado mais recente e o histórico.
 
-### Data flow
+Para a descrição completa de pastas e arquivos, consulte [PROJECT_STRUCTURE.md](/Users/carllosintfpc/Documents/teste/PROJECT_STRUCTURE.md).
 
-1. The user enters a free-form order in the React form.
-2. The frontend sends `POST /pedido` with `{ texto }`.
-3. The backend validates the request body with Zod.
-4. `OrderService` calls the parser and normalizes the result.
-5. Parsed data is validated again against the stored order schema.
-6. `OrderRepository` writes the order and items to SQLite inside a transaction.
-7. The backend returns the created order.
-8. The frontend renders the structured result and updates the local history list.
-9. Existing orders are loaded with `GET /pedidos` and can be inspected individually in the UI.
+## Uso de IA
 
-## AI-assisted development
+Esta seção deve permanecer factual. Substitua os placeholders entre colchetes pelas ferramentas que você realmente utilizou antes de entregar o projeto.
 
-This section should be factual. Replace bracketed placeholders with the tools you actually used before submission.
+### Ferramentas Utilizadas
 
-### Tools used
+- `[ex.: ChatGPT]`
+- `[ex.: GitHub Copilot]`
+- `[remover qualquer ferramenta que não tenha sido usada]`
 
-- `[e.g. ChatGPT]`
-- `[e.g. GitHub Copilot]`
-- `[remove any tool that was not actually used]`
+### Onde a IA Foi Utilizada
 
-### Where AI was used
+- Desenho de arquitetura
+  Usada para comparar uma estrutura simples em camadas no backend com uma abordagem de frontend de página única.
+- Desenvolvimento do parser
+  Usada para explorar padrões de regex, regras de normalização e exemplos de edge cases para pedidos em texto livre.
+- Setup do backend
+  Usada para acelerar boilerplate de rotas, validação, tratamento de erro e estrutura inicial do projeto.
+- Setup do frontend
+  Usada para orientar a estrutura de componentes, fluxo de estado local e organização da camada de API.
 
-- Architecture exploration:
-  Used to compare a simple layered backend structure and a minimal single-page frontend approach.
-- Parsing logic:
-  Used to brainstorm regex patterns, normalization steps, and edge-case examples for free-form orders.
-- Backend boilerplate:
-  Used to accelerate repetitive setup such as route/controller/service scaffolding, validation shape ideas, and error-handling structure.
-- Frontend structure:
-  Used to outline a small component tree, local state flow, and API client shape.
+### Como os Prompts Evoluíram
 
-### How prompts evolved
+- Os prompts iniciais eram mais amplos e focados em arquitetura e organização geral.
+- Depois, ficaram mais específicos sobre:
+  - contrato de respostas da API
+  - edge cases do parser
+  - modelagem de persistência em SQLite
+  - responsabilidades dos componentes React
+  - adequação da solução ao escopo de 6–8 horas
 
-- Initial prompts were broad and focused on overall architecture.
-- Later prompts became specific to:
-  - exact API response contracts
-  - parser edge cases
-  - SQLite persistence model
-  - React component responsibilities
-  - keeping the solution appropriate for a short technical assignment
+### Onde as Sugestões da IA Foram Incorretas ou Incompletas
 
-### Where AI output was incomplete or incorrect
+Casos típicos encontrados durante a iteração:
 
-Examples of issues worth documenting if they happened in your workflow:
+- boilerplate que não correspondia exatamente ao contrato exigido pela API
+- sugestões de parser genéricas demais para o formato esperado de entrada
+- sugestões de frontend com complexidade desnecessária
+- inconsistências de nomenclatura ou formato de resposta entre camadas
 
-- overly generic boilerplate that did not match the project contract
-- parser suggestions that failed on mixed Portuguese/English phrasing
-- solutions that were more complex than necessary for the assignment scope
-- inconsistent naming or response shapes
-- frontend suggestions that introduced unnecessary state-management complexity
+### O que Foi Revisado e Corrigido Manualmente
 
-### What was manually corrected or improved
+O código final foi revisado e ajustado manualmente. Isso incluiu:
 
-Examples to keep or adapt based on your actual process:
+- alinhar a implementação ao contrato esperado da API
+- simplificar o frontend para uso de estado local
+- refinar regras do parser para os padrões de pedido esperados
+- padronizar nomenclaturas entre backend, frontend e persistência
+- revisar tratamento de erros e consistência de respostas
 
-- aligned the implementation to the required API contract
-- simplified the frontend to local state instead of adding extra libraries
-- adjusted parser rules to better support the expected input format
-- normalized naming and response formats across the stack
-- refined error handling and validation messages
+Observação final:
 
-## Key technical decisions
+- A IA foi utilizada como ferramenta de apoio para acelerar iteração e exploração, mas a versão final submetida foi validada e refinada manualmente.
 
-### Why SQLite
+## Decisões Técnicas
 
-- Very fast to set up for a technical assignment
-- No external database service required
-- Good fit for a small local system with relational data
-- Easy to evaluate because the reviewer can run everything locally
+### Por que SQLite
 
-### Why a rule-based parser instead of NLP
+- Rápido de configurar para um desafio técnico
+- Não exige serviço externo
+- É adequado para um conjunto pequeno de dados relacionais
+- Facilita a avaliação, porque o projeto roda localmente sem infraestrutura adicional
 
-- The assignment scope is narrow and the expected entities are known
-- A deterministic parser is easier to test, reason about, and explain
-- It avoids dependence on external services and network calls
-- It keeps the behavior stable for demo purposes
+### Por que um Parser Rule-based em vez de NLP
+
+- As entradas esperadas são limitadas o suficiente para uma abordagem determinística
+- Uma solução rule-based é mais fácil de explicar, depurar e validar
+- Evita dependência de APIs externas ou saída probabilística
+- Mantém o comportamento estável e reproduzível na demonstração
 
 Trade-off:
 
-- A rule-based parser is less flexible than a true NLP pipeline and requires explicit handling of new language patterns.
+- É menos flexível que uma solução baseada em NLP e exige tratamento explícito de novos padrões.
 
-### Why the frontend is single-page with local state
+### Por que um Frontend Simples, de Página Única, com Estado Local
 
-- The UI has one primary workflow
-- Global state would add complexity without clear benefit
-- Local state keeps the code easy to read and easy to explain in an interview
-- It is sufficient for the create/list/view scope of the assignment
+- O desafio possui um fluxo principal bem definido
+- Gerenciamento global de estado adicionaria complexidade sem ganho claro
+- Estado local mantém o código mais legível e fácil de explicar
+- É suficiente para os fluxos de criar, listar e visualizar
 
-### Time-based trade-offs
+### Trade-offs pelo Escopo de 6–8 Horas
 
-- Focused on end-to-end correctness over advanced UI polish
-- Chose a deterministic parser over a more ambitious but less reliable approach
-- Kept the frontend intentionally small instead of adding routing or global state
-- Prioritized readable code and predictable behavior over extra abstractions
+- priorização de corretude end-to-end em vez de polimento visual avançado
+- escolha de um parser determinístico em vez de uma solução mais ambiciosa
+- ausência de roteamento e bibliotecas externas de estado
+- foco em legibilidade, previsibilidade e facilidade de avaliação
 
-## Edge cases handled
+## Edge Cases Tratados
 
-- Invalid or empty input:
-  request validation rejects incomplete payloads and returns structured errors
-- Missing quantities:
-  items without a valid positive integer quantity are ignored, and the request fails if no valid items remain
-- Missing units:
-  unit is optional and stored as `null` when not detected
-- Relative date parsing:
-  supports terms such as `today`, `tomorrow`, `day after tomorrow`, `hoje`, `amanhã`, and `depois de amanhã`
-- Multiple items in one sentence:
-  item parsing splits by repeated numeric item starts, allowing input such as `10 caixas de leite e 5 pacotes de água`
-- Missing customer:
-  if the parser cannot identify a customer name, the stored value is normalized to `null`
+- entrada inválida ou vazia
+  a validação retorna erros estruturados
+- quantidades ausentes
+  itens sem quantidade válida são ignorados, e a requisição falha se nenhum item válido for encontrado
+- unidades ausentes
+  a unidade é opcional e é armazenada como `null` quando não detectada
+- múltiplos itens em uma única frase
+  o parser suporta vários itens iniciados por quantidade na mesma sentença
+- datas relativas
+  suporta termos como `today`, `tomorrow`, `day after tomorrow`, `hoje`, `amanhã` e `depois de amanhã`
 
-## Final review checklist
+## Checklist Final de Revisão
 
-Before submission, verify:
+Antes da entrega, verificar:
 
-- API responses are consistent across success and error cases
-- naming is consistent across backend, frontend, and database mapping
-- temporary logs, commented code, and debug helpers were removed
-- unused files and leftover template assets were removed if they are not part of the final demo
-- `.gitignore` covers `node_modules`, build output, `.env`, SQLite database files, and SQLite `-wal` / `-shm` files
-- README instructions work from a clean clone
-- backend and frontend both start successfully
-- the happy path works end to end
+- consistência das respostas da API em casos de sucesso e erro
+- consistência de nomenclatura entre backend, frontend e persistência
+- tratamento de erro claro e dentro do formato esperado
+- remoção de logs temporários, código de debug e arquivos não usados
+- `.gitignore` cobrindo `node_modules`, build, `.env`, arquivos do SQLite e também `-wal` / `-shm`
+- backend e frontend iniciando corretamente a partir de um clone limpo
+- fluxos de criar, listar e visualizar funcionando de ponta a ponta
 
-## Suggestions before submission
+## Observações Finais
 
-- Fill in the AI section with the exact tools and examples from your real workflow. Do not claim tools you did not use.
-- Add one screenshot or a short GIF to the README if the submission format allows it.
-- Review `.gitignore` and include:
-  - `backend/data/*.db-wal`
-  - `backend/data/*.db-shm`
-  - `.env` files
-- Remove unused OpenAI-related config and dependencies if they are not part of the final delivered solution.
-- Run a final smoke test:
-  - backend starts
-  - frontend starts
-  - order creation works
-  - order listing works
-  - order details work
-
-## Project structure
-
-```text
-backend/
-  src/
-    config/
-    controllers/
-    db/
-    errors/
-    middlewares/
-    repositories/
-    routes/
-    schemas/
-    services/
-frontend/
-  src/
-    api/
-    components/
-    types/
-```
+- O projeto foi intencionalmente mantido fácil de revisar rapidamente.
+- A implementação prioriza clareza, comportamento determinístico e estrutura legível, sem complexidade desnecessária.
+- A documentação detalhada de pastas e arquivos está em [PROJECT_STRUCTURE.md](/Users/carllosintfpc/Documents/teste/PROJECT_STRUCTURE.md).

@@ -16,6 +16,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse
   return parseResponse<T>(response);
 }
 
+async function requestOrdersList(path: string): Promise<OrdersListResponse> {
+  const response = await fetch(`${API_URL}${path}`);
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+    throw new Error(payload?.error?.message ?? 'Request failed.');
+  }
+
+  return (await response.json()) as OrdersListResponse;
+}
+
 export async function createOrder(texto: string): Promise<Order> {
   const response = await request<Order>('/pedido', {
     method: 'POST',
@@ -29,6 +40,6 @@ export async function createOrder(texto: string): Promise<Order> {
 }
 
 export async function getOrders(): Promise<Order[]> {
-  const response = await request<OrdersListResponse>('/pedidos');
-  return response.data.data;
+  const response = await requestOrdersList('/pedidos');
+  return response.data;
 }
