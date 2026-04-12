@@ -1,13 +1,16 @@
 import { HttpError } from '../errors/httpError';
 import { OrderRepository } from '../repositories/orderRepository';
 import { parsedOrderSchema, type ParsedOrderData, type StoredOrder } from '../schemas/orderSchema';
-import { parseOrder } from './freeFormOrderParser';
+import type { OrderParser } from './orderParser';
 
 export class OrderService {
-  constructor(private readonly repository: OrderRepository) {}
+  constructor(
+    private readonly repository: OrderRepository,
+    private readonly orderParser: OrderParser,
+  ) {}
 
-  private normalizeParsedOrder(orderText: string): ParsedOrderData {
-    const parsedOrder = parseOrder(orderText);
+  private async normalizeParsedOrder(orderText: string): Promise<ParsedOrderData> {
+    const parsedOrder = await this.orderParser.parse(orderText);
     const cliente = parsedOrder.cliente === 'unknown' ? null : parsedOrder.cliente;
 
     if (parsedOrder.itens.length === 0) {
@@ -22,7 +25,7 @@ export class OrderService {
   }
 
   async createFromText(orderText: string): Promise<StoredOrder> {
-    const parsedOrder = this.normalizeParsedOrder(orderText);
+    const parsedOrder = await this.normalizeParsedOrder(orderText);
 
     return this.repository.create({
       textoOriginal: orderText,

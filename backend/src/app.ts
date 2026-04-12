@@ -8,6 +8,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler';
 import { OrderRepository } from './repositories/orderRepository';
 import { createOrderRoutes } from './routes/orderRoutes';
 import { OrderService } from './services/orderService';
+import { RuleBasedOrderParser } from './services/ruleBasedOrderParser';
 
 type CreateAppOptions = {
   frontendUrl?: string;
@@ -17,7 +18,8 @@ type CreateAppOptions = {
 function buildOrderController(): OrderController {
   runMigrations();
   const orderRepository = new OrderRepository();
-  const orderService = new OrderService(orderRepository);
+  const orderParser = new RuleBasedOrderParser();
+  const orderService = new OrderService(orderRepository, orderParser);
   return new OrderController(orderService);
 }
 

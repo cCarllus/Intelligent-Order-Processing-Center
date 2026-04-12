@@ -6,6 +6,7 @@ import { createDatabaseConnection } from '../../src/db/createConnection';
 import { runMigrations } from '../../src/db/migrations';
 import { OrderRepository } from '../../src/repositories/orderRepository';
 import { OrderService } from '../../src/services/orderService';
+import { RuleBasedOrderParser } from '../../src/services/ruleBasedOrderParser';
 
 type TestApp = {
   app: ReturnType<typeof createApp>;
@@ -17,7 +18,7 @@ export function createTestApp(): TestApp {
   runMigrations(database);
 
   const repository = new OrderRepository(database);
-  const service = new OrderService(repository);
+  const service = new OrderService(repository, new RuleBasedOrderParser());
   const controller = new OrderController(service);
 
   return {

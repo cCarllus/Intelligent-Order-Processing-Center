@@ -164,13 +164,10 @@ npm test
   Origem permitida no CORS. Padrão: `http://localhost:5173`
 - `DATABASE_PATH`
   Caminho do banco SQLite. Padrão: `./data/orders.db`
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL`
-- `USE_FAKE_AI`
 
 Observação:
 
-- As variáveis relacionadas à OpenAI estão disponíveis na configuração, mas a solução atual usa um parser rule-based e não depende delas no fluxo principal.
+- o sistema não depende de serviços externos de IA em runtime e não requer chave de API para funcionar
 
 `.env` do frontend:
 
@@ -258,7 +255,7 @@ O backend segue uma estrutura simples em camadas:
 - `repository`
   Encapsula a persistência em SQLite.
 - `parser`
-  Extrai campos estruturados a partir do texto livre.
+  Extrai campos estruturados a partir do texto livre por meio de regras determinísticas.
 
 ### Frontend
 
@@ -272,8 +269,8 @@ O frontend foi mantido intencionalmente como uma interface de página única:
 
 1. O usuário envia um texto livre pelo frontend.
 2. O frontend faz `POST /pedido`.
-3. O backend valida a requisição e executa o parser.
-4. Os dados extraídos são normalizados e validados.
+3. O backend valida a requisição e executa o parser rule-based.
+4. Os dados extraídos são normalizados e validados com Zod.
 5. O repositório persiste o pedido e os itens em SQLite.
 6. O pedido criado é retornado ao frontend.
 7. O frontend atualiza o resultado mais recente e o histórico.
@@ -287,7 +284,7 @@ O frontend foi mantido intencionalmente como uma interface de página única:
 
 ## Uso de IA
 
-Ferramentas de IA foram utilizadas como apoio de produtividade e exploração técnica. A implementação final foi revisada e refinada manualmente.
+Ferramentas de IA foram utilizadas exclusivamente durante o desenvolvimento como apoio de produtividade, exploração de alternativas e iteração técnica. A implementação final da aplicação não usa IA em runtime, não depende de modelos externos para parsing e mantém comportamento determinístico.
 
 ### Ferramentas Utilizadas
 
@@ -297,38 +294,52 @@ Ferramentas de IA foram utilizadas como apoio de produtividade e exploração t�
 
 ### Áreas de Uso
 
-- Exploração de arquitetura
-  Usada para comparar uma estrutura simples em camadas no backend com uma abordagem de frontend de página única.
-- Desenvolvimento do parser
-  Usada para explorar padrões de regex, regras de normalização e exemplos de edge cases para pedidos em texto livre.
-- Setup do backend
-  Usada para acelerar boilerplate de rotas, validação, tratamento de erro e estrutura inicial do projeto.
-- Setup do frontend
-  Usada para orientar a estrutura de componentes, fluxo de estado local e organização da camada de API.
+- Arquitetura
+- apoio na comparação entre uma estrutura simples em camadas e alternativas com maior nível de abstração
+- a decisão final foi manter controller, service, repository e parser separados
+- Parsing
+  apoio na exploração de regex, normalização de unidades, extração de datas e cobertura de edge cases para pedidos em texto livre
+- Backend
+  apoio na aceleração do scaffolding inicial de rotas, validação, tratamento de erro e organização dos módulos
+- Frontend
+  apoio na estruturação dos componentes, estados locais e camada de chamadas HTTP
+- Testes
+  apoio na geração de ideias de cenários de teste para parser, endpoints e interação da interface
 
 ### Evolução dos Prompts
 
-- Os prompts iniciais foram mais amplos e focados em arquitetura e organização geral.
-- Depois, passaram a focar mais especificamente em contratos de resposta da API, edge cases do parser, modelagem de persistência em SQLite, responsabilidades dos componentes React e adequação ao escopo de 6-8 horas.
+- os prompts iniciais foram mais amplos e focados em arquitetura e organização geral
+- depois, passaram a focar em parser rule-based, edge cases, contratos de resposta da API, modelagem em SQLite e responsabilidades dos componentes React
+- as respostas mais úteis vieram de prompts mais específicos, com exemplos concretos de entrada, saída esperada e restrições de escopo
 
 ### Limitações Observadas nas Sugestões de IA
 
 Casos típicos identificados durante a iteração:
 
-- boilerplate que não correspondia completamente ao contrato exigido pela API
-- sugestões de parser genéricas demais para o formato esperado de entrada
-- sugestões de frontend com complexidade desnecessária
-- inconsistências de nomenclatura ou formato de resposta entre camadas
+- boilerplate que não correspondia exatamente ao contrato exigido pela API
+- sugestões de parser excessivamente genéricas ou complexas para o escopo do desafio
+- propostas de frontend com complexidade maior do que o necessário
+- inconsistências de nomenclatura entre camadas
+- cenários de teste redundantes ou pouco aderentes ao comportamento real desejado
 
 ### Revisão e Refinamento Manual
 
 O código final foi revisado e ajustado manualmente. Isso incluiu:
 
+- revisar toda sugestão antes de incorporar ao código
+- simplificar trechos excessivamente abstratos ou desnecessários
 - alinhar a implementação ao contrato esperado da API
-- simplificar o frontend com base em estado local
 - refinar as regras do parser para os padrões de pedido esperados
+- simplificar o frontend com base em estado local
 - padronizar nomenclaturas entre backend, frontend e persistência
 - revisar o tratamento de erros e a consistência das respostas
+
+### Onde a IA Precisou de Correção
+
+- sugestões de parser com regras amplas demais precisaram ser reduzidas para manter previsibilidade
+- trechos de código com abstração desnecessária foram simplificados
+- respostas com contratos de API inconsistentes foram ajustadas manualmente
+- ideias de testes foram filtradas e adaptadas para refletir o comportamento real implementado
 
 ## Abordagem de Desenvolvimento
 
@@ -343,16 +354,17 @@ A implementação seguiu uma abordagem leve orientada por contrato. Os formatos 
 - adequado para um conjunto pequeno de dados relacionais
 - facilita a execução local sem infraestrutura adicional
 
-### Por que um Parser Rule-Based em vez de NLP
+### Por que um Parser Rule-Based
 
-- as entradas esperadas são limitadas o suficiente para uma abordagem determinística
-- uma solução rule-based é mais fácil de depurar, validar e compreender
-- evita dependência de APIs externas e saídas probabilísticas
-- mantém o comportamento estável e reproduzível
+- foi uma escolha intencional para manter o sistema previsível e fácil de avaliar
+- facilita testes automatizados e depuração do comportamento
+- evita dependência de serviços externos e custos por requisição
+- reduz comportamento não determinístico em um contexto de avaliação técnica
 
 Trade-off:
 
-- é menos flexível do que uma solução baseada em NLP e exige tratamento explícito para novos padrões
+- um parser rule-based é menos flexível do que uma abordagem baseada em NLP
+- novos formatos de entrada exigem ampliação explícita das regras
 
 ### Por que um Frontend Simples, de Página Única, com Estado Local
 
@@ -364,7 +376,7 @@ Trade-off:
 ### Trade-Offs Dentro de um Escopo de 6-8 Horas
 
 - priorizar corretude end-to-end em vez de polimento visual avançado
-- escolher um parser determinístico em vez de uma solução mais ambiciosa
+- usar IA como apoio de desenvolvimento, sem criar dependência em runtime
 - evitar roteamento e bibliotecas externas de estado
 - focar em legibilidade, previsibilidade e facilidade de avaliação
 
