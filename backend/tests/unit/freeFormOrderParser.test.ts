@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parseCustomer,
+  parseDate,
+  parseExplicitDate,
   parseItems,
   parseOrder,
 } from '../../src/services/freeFormOrderParser';
@@ -42,6 +44,30 @@ describe('freeFormOrderParser', () => {
     expect(
       parseOrder('Preciso de 2 caixas de leite day after tomorrow', baseDate).data_entrega,
     ).toBe('2026-04-13');
+  });
+
+  it('parses supported explicit date formats into ISO', () => {
+    expect(parseExplicitDate('Entrega em 11/02/2026')).toBe('2026-02-11');
+    expect(parseExplicitDate('Entrega em 11-02-2026')).toBe('2026-02-11');
+    expect(parseExplicitDate('Entrega em 2026-02-11')).toBe('2026-02-11');
+  });
+
+  it('ignores invalid or partial explicit dates', () => {
+    expect(parseExplicitDate('Entrega em 32/13/2026')).toBeNull();
+    expect(parseExplicitDate('Entrega em 31/02/2026')).toBeNull();
+    expect(parseExplicitDate('Entrega em 29/02/2025')).toBeNull();
+    expect(parseExplicitDate('Entrega em 11/02')).toBeNull();
+    expect(parseExplicitDate('Entrega em 2026-2-11')).toBeNull();
+  });
+
+  it('prefers explicit dates over relative dates', () => {
+    expect(parseDate('Entregar amanhã ou em 11/02/2026', baseDate)).toBe('2026-02-11');
+    expect(parseDate('Deliver tomorrow on 2026-02-11', baseDate)).toBe('2026-02-11');
+  });
+
+  it('returns the first valid explicit date when multiple dates exist', () => {
+    expect(parseExplicitDate('Datas: 32/01/2026, 11/02/2026 e 2026-03-12')).toBe('2026-02-11');
+    expect(parseExplicitDate('Datas: 2026-03-12 e 11/02/2026')).toBe('2026-03-12');
   });
 
   it('returns no items for weak or invalid order text', () => {

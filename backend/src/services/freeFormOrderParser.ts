@@ -15,6 +15,11 @@ type DatePattern = {
   offsetDays?: number;
 };
 
+type ExplicitDatePattern = {
+  regex: RegExp;
+  extractor: (match: RegExpExecArray) => { day: number; month: number; year: number };
+};
+
 const UNIT_ALIASES: Record<string, string> = {
   box: 'boxes',
   boxes: 'boxes',
@@ -51,12 +56,39 @@ const DATE_PATTERNS: DatePattern[] = [
   { regex: /amanh[aã]/iu, offsetDays: 1 },
   { regex: /today/i, offsetDays: 0 },
   { regex: /hoje/iu, offsetDays: 0 },
-  { regex: /(\d{4}-\d{2}-\d{2})/ },
+];
+
+const EXPLICIT_DATE_PATTERNS: ExplicitDatePattern[] = [
+  {
+    regex: /(?:^|[^\p{L}\d])(\d{2})\/(\d{2})\/(\d{4})(?=$|[^\p{L}\d])/gu,
+    extractor: (match) => ({
+      day: Number.parseInt(match[1] ?? '', 10),
+      month: Number.parseInt(match[2] ?? '', 10),
+      year: Number.parseInt(match[3] ?? '', 10),
+    }),
+  },
+  {
+    regex: /(?:^|[^\p{L}\d])(\d{2})-(\d{2})-(\d{4})(?=$|[^\p{L}\d])/gu,
+    extractor: (match) => ({
+      day: Number.parseInt(match[1] ?? '', 10),
+      month: Number.parseInt(match[2] ?? '', 10),
+      year: Number.parseInt(match[3] ?? '', 10),
+    }),
+  },
+  {
+    regex: /(?:^|[^\p{L}\d])(\d{4})-(\d{2})-(\d{2})(?=$|[^\p{L}\d])/gu,
+    extractor: (match) => ({
+      year: Number.parseInt(match[1] ?? '', 10),
+      month: Number.parseInt(match[2] ?? '', 10),
+      day: Number.parseInt(match[3] ?? '', 10),
+    }),
+  },
 ];
 
 const DATE_CLEANUP_PATTERNS = [
   /\b(?:for delivery|delivery|deliver(?:y)?(?: on)?|para entrega|entrega(?: para)?)\b.*$/i,
   /(?:day after tomorrow|after tomorrow|tomorrow|today|depois de amanh[aã]|amanh[aã]|hoje).*$/iu,
+  /(?:\d{2}\/\d{2}\/\d{4}|\d{2}-\d{2}-\d{4}|\d{4}-\d{2}-\d{2}).*$/u,
 ];
 
 const ITEM_JOINER_REGEX = /\b(?:and|e)\b\s*$/i;
@@ -85,6 +117,34 @@ function addDays(baseDate: Date, days: number): Date {
   return nextDate;
 }
 
+function isLeapYear(year: number): boolean {
+  return year % 400 === 0 || (year % 4 === 0 && year % 100 !== 0);
+}
+
+function getDaysInMonth(month: number, year: number): number {
+  if (month === 2) {
+    return isLeapYear(year) ? 29 : 28;
+  }
+
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
+function isValidExplicitDate(day: number, month: number, year: number): boolean {
+  if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year)) {
+    return false;
+  }
+
+  if (year < 1 || month < 1 || month > 12) {
+    return false;
+  }
+
+  return day >= 1 && day <= getDaysInMonth(month, year);
+}
+
+function formatExplicitDate(year: number, month: number, day: number): string {
+  return `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
 export function parseCustomer(text: string): string {
   for (const pattern of CUSTOMER_PATTERNS) {
     const match = text.match(pattern);
@@ -96,7 +156,38 @@ export function parseCustomer(text: string): string {
   return 'unknown';
 }
 
+export function parseExplicitDate(text: string): string | null {
+  let firstValidMatch: { index: number; value: string } | null = null;
+
+  for (const pattern of EXPLICIT_DATE_PATTERNS) {
+    const regex = new RegExp(pattern.regex);
+
+    for (const match of text.matchAll(regex)) {
+      const fullMatch = match[0] ?? '';
+      const dateText = fullMatch.trimStart();
+      const index = (match.index ?? 0) + (fullMatch.length - dateText.length);
+      const { day, month, year } = pattern.extractor(match);
+
+      if (!isValidExplicitDate(day, month, year)) {
+        continue;
+      }
+
+      const value = formatExplicitDate(year, month, day);
+      if (!firstValidMatch || index < firstValidMatch.index) {
+        firstValidMatch = { index, value };
+      }
+    }
+  }
+
+  return firstValidMatch?.value ?? null;
+}
+
 export function parseDate(text: string, baseDate: Date = new Date()): string | null {
+  const explicitDate = parseExplicitDate(text);
+  if (explicitDate) {
+    return explicitDate;
+  }
+
   for (const pattern of DATE_PATTERNS) {
     const match = text.match(pattern.regex);
     if (!match) {
